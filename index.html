@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>فحص كود التحقق</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Tahoma', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            direction: rtl;
+        }
+        .container {
+            background: white;
+            max-width: 600px;
+            width: 100%;
+            padding: 20px 16px;
+            border-radius: 25px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.4);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .header h1 {
+            color: #1a1a2e;
+            font-size: 22px;
+            margin-bottom: 3px;
+        }
+        .input-area {
+            margin: 8px 0;
+        }
+        .code-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 10px 12px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            transition: all 0.3s ease;
+            direction: ltr;
+            text-align: left;
+            background: #fafafa;
+        }
+        .code-input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52,152,219,0.2);
+            background: white;
+        }
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .btn-row button {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-row button:active {
+            transform: scale(0.95);
+        }
+        .btn-check {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+        }
+        .btn-paste {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+        .btn-paste:active {
+            background: #1a6a8a;
+        }
+        .btn-clear {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        .result {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            display: none;
+        }
+        .result.valid {
+            display: block;
+            background: #d4edda;
+            border: 2px solid #28a745;
+        }
+        .result.invalid {
+            display: block;
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+        }
+        .result.warning {
+            display: block;
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+        }
+        .result.date-tamper {
+            display: block;
+            background: #f8d7da;
+            border: 3px solid #dc3545;
+            box-shadow: 0 0 20px rgba(220, 53, 69, 0.3);
+        }
+        .result h3 {
+            margin-bottom: 8px;
+            font-size: 15px;
+            text-align: center;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 6px 0;
+            font-size: 13px;
+        }
+        .comparison-table th {
+            background: #f0f0f0;
+            padding: 6px 4px;
+            text-align: center;
+            border: 1px solid #ddd;
+            font-size: 12px;
+        }
+        .comparison-table td {
+            padding: 6px 4px;
+            text-align: center;
+            border: 1px solid #ddd;
+            font-size: 12px;
+            word-break: break-word;
+        }
+        .comparison-table .match {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .comparison-table .mismatch {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .comparison-table .field-name {
+            font-weight: bold;
+            background: #f8f9fa;
+        }
+        .result.date-tamper .comparison-table th {
+            background: #dc3545;
+            color: white;
+        }
+        .result.date-tamper .comparison-table td {
+            border-color: #dc3545;
+        }
+        .result.date-tamper .comparison-table .match {
+            color: #28a745;
+        }
+        .result.date-tamper .comparison-table .mismatch {
+            color: #dc3545;
+        }
+        .result.date-tamper .comparison-table .field-name {
+            background: #fce4e4;
+        }
+        .summary-box {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .summary-box.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+        .summary-box.danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+        .summary-box.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffc107;
+        }
+        .tamper-message {
+            margin-top: 8px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: bold;
+            background: #dc3545;
+            color: white;
+            border: 2px solid #a71d2a;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+            animation: pulse-red 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-red {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        .error-details {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 6px 0;
+            font-size: 12px;
+            color: #555;
+            direction: rtl;
+            text-align: right;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 6px;
+        }
+        .loading.show {
+            display: block;
+        }
+        .loading::after {
+            content: '⏳ جاري الفحص...';
+            animation: pulse 1s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        @media (max-width: 400px) {
+            .container {
+                padding: 12px 10px;
+            }
+            .header h1 {
+                font-size: 18px;
+            }
+            .btn-row button {
+                min-width: 50px;
+                padding: 8px 6px;
+                font-size: 12px;
+            }
+            .comparison-table {
+                font-size: 11px;
+            }
+            .comparison-table th,
+            .comparison-table td {
+                padding: 4px 3px;
+                font-size: 11px;
+            }
+            .summary-box {
+                font-size: 11px;
+                padding: 6px 8px;
+            }
+            .tamper-message {
+                font-size: 13px;
+                padding: 8px;
+            }
+            .code-input {
+                min-height: 100px;
+                padding: 8px 10px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🔐 فحص كود التحقق</h1>
+    </div>
+
+    <div class="input-area">
+        <textarea class="code-input" id="codeInput" placeholder=""></textarea>
+    </div>
+
+    <div class="btn-row">
+        <button class="btn-check" onclick="verifyMessage()">🔍 فحص</button>
+        <button class="btn-paste" onclick="pasteFromClipboard()">📋 لصق</button>
+        <button class="btn-clear" onclick="clearAll()">🗑️ مسح</button>
+    </div>
+
+    <div class="loading" id="loading"></div>
+    <div id="result" class="result"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script>
+    // ============================================================
+    // 🔐 مفاتيح التشفير - مخفية باستخدام Base64 وتقسيم
+    // ============================================================
+    
+    // المفتاح الأساسي مشفر بـ Base64
+    const _k1 = "TjBydGhDQGlyMCMyMDI2";
+    
+    // IV مشفر بـ Base64
+    const _k2 = "NTM2NTYzNzU3MjY1MjE1NjY1NjM3NDMwNzIyMzMwMzIzMjM2";
+    
+    // دالة فك التشفير (تشغيل المفاتيح)
+    function getKeys() {
+        return {
+            SECRET_KEY: atob(_k1),
+            SECRET_IV: atob(_k2)
+        };
+    }
+    
+    const FIELDS = ['الموظف', 'التاريخ', 'الوقت', 'الفرع', 'النوع'];
+    
+    // ============================================================
+    // دالة استخراج الكود من الرسالة
+    // ============================================================
+    function extractCodeFromMessage(message) {
+        const patterns = [
+            /كود[:\s]+([A-Za-z0-9_\-\.]+)/,
+            /🔐\s*كود[:\s]+([A-Za-z0-9_\-\.]+)/,
+            /الكود[:\s]+([A-Za-z0-9_\-\.]+)/
+        ];
+        
+        for (let pattern of patterns) {
+            const match = message.match(pattern);
+            if (match && match[1] && match[1].length > 10) {
+                return match[1];
+            }
+        }
+        
+        const u2fMatch = message.match(/U2F[A-Za-z0-9_\-\.]+/);
+        if (u2fMatch && u2fMatch[0].length > 20) {
+            return u2fMatch[0];
+        }
+        
+        const longMatch = message.match(/[A-Za-z0-9_\-\.]{30,}/);
+        if (longMatch) {
+            return longMatch[0];
+        }
+        
+        return null;
+    }
+    
+    // ============================================================
+    // دالة استخراج البيانات من الرسالة
+    // ============================================================
+    function extractDataFromMessage(message) {
+        const data = {};
+        
+        let match = message.match(/(?:الموظف|موظف)[:\s]+([^\n]+)/);
+        if (match) data.الموظف = match[1].trim().replace(/[*]/g, '');
+        
+        match = message.match(/(?:التاريخ|تاريخ)[:\s]+([^\n]+)/);
+        if (match) data.التاريخ = match[1].trim().replace(/[*]/g, '');
+        
+        match = message.match(/(?:الوقت|وقت)[:\s]+([^\n]+)/);
+        if (match) data.الوقت = match[1].trim().replace(/[*]/g, '');
+        
+        match = message.match(/(?:الفرع|فرع|الغرض|غر)[:\s]+([^\n]+)/);
+        if (match) data.الفرع = match[1].trim().replace(/[*]/g, '');
+        
+        match = message.match(/تسجيل\s*([^\s\n]+)/);
+        if (match) data.النوع = match[1].trim().replace(/[*]/g, '');
+        
+        if (!data.الموظف || !data.التاريخ || !data.الوقت || !data.الفرع) {
+            const lines = message.split('\n');
+            for (let line of lines) {
+                const cleanLine = line.replace(/[*]/g, '').trim();
+                
+                if ((cleanLine.includes('الموظف') || cleanLine.includes('موظف')) && !data.الموظف) {
+                    const val = cleanLine.replace(/[👤]/g, '').replace(/الموظف|موظف|:/g, '').trim();
+                    if (val && val.length > 0) data.الموظف = val;
+                }
+                
+                if ((cleanLine.includes('التاريخ') || cleanLine.includes('تاريخ')) && !data.التاريخ) {
+                    const val = cleanLine.replace(/[📅]/g, '').replace(/التاريخ|تاريخ|:/g, '').trim();
+                    if (val && val.length > 0) data.التاريخ = val;
+                }
+                
+                if ((cleanLine.includes('الوقت') || cleanLine.includes('وقت')) && !data.الوقت) {
+                    const val = cleanLine.replace(/[⏰]/g, '').replace(/الوقت|وقت|:/g, '').trim();
+                    if (val && val.length > 0) data.الوقت = val;
+                }
+                
+                if ((cleanLine.includes('الفرع') || cleanLine.includes('فرع') || cleanLine.includes('الغرض') || cleanLine.includes('غر')) && !data.الفرع) {
+                    const val = cleanLine.replace(/[📍]/g, '').replace(/الفرع|فرع|الغرض|غر|:/g, '').trim();
+                    if (val && val.length > 0) data.الفرع = val;
+                }
+            }
+        }
+        
+        return data;
+    }
+    
+    // ============================================================
+    // دالة فك التشفير (باستخدام المفاتيح المخفية)
+    // ============================================================
+    function decryptCode(code) {
+        try {
+            const keys = getKeys();
+            const parts = code.split('.');
+            if (parts.length !== 2) {
+                return { success: false, error: 'تنسيق الكود غير صحيح' };
+            }
+            
+            const encryptedPart = parts[0];
+            const receivedHmac = parts[1];
+            
+            let base64Code = encryptedPart
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+            
+            while (base64Code.length % 4 !== 0) {
+                base64Code += '=';
+            }
+            
+            const decrypted = CryptoJS.AES.decrypt(base64Code, keys.SECRET_KEY, {
+                iv: CryptoJS.enc.Hex.parse(keys.SECRET_IV),
+                mode: CryptoJS.mode.CBC,
+                padding: CryptoJS.pad.Pkcs7
+            });
+            
+            const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
+            
+            if (!decryptedText || decryptedText.length === 0) {
+                return { success: false, error: 'فشل فك التشفير - المفتاح غير صحيح' };
+            }
+            
+            const expectedHmac = CryptoJS.HmacSHA256(encryptedPart, keys.SECRET_KEY)
+                .toString(CryptoJS.enc.Base64)
+                .replace(/=/g, '')
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .substring(0, 16);
+            
+            if (receivedHmac !== expectedHmac) {
+                return { 
+                    success: false, 
+                    error: 'HMAC غير مطابق - تم التلاعب بالبيانات',
+                    data: decryptedText.split('|')
+                };
+            }
+            
+            return {
+                success: true,
+                data: decryptedText.split('|')
+            };
+            
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+    
+    // ============================================================
+    // دالة فحص الرسالة الرئيسية
+    // ============================================================
+    function verifyMessage() {
+        const inputText = document.getElementById('codeInput').value.trim();
+        const resultDiv = document.getElementById('result');
+        const loadingDiv = document.getElementById('loading');
+        
+        loadingDiv.className = 'loading show';
+        resultDiv.className = 'result';
+        resultDiv.style.display = 'none';
+        
+        if (!inputText) {
+            loadingDiv.className = 'loading';
+            resultDiv.className = 'result invalid';
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '⚠️ يرجى لصق رسالة الواتساب أولاً';
+            return;
+        }
+        
+        setTimeout(() => {
+            try {
+                const code = extractCodeFromMessage(inputText);
+                
+                if (!code) {
+                    loadingDiv.className = 'loading';
+                    resultDiv.className = 'result invalid';
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = `
+                        <h3>❌ لم يتم العثور على كود تحقق</h3>
+                        <div class="error-details">
+                            تأكد من نسخ الرسالة كاملة من واتساب<br>
+                            يجب أن تحتوي الرسالة على "الكود:" متبوعاً بالكود
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const messageData = extractDataFromMessage(inputText);
+                const result = decryptCode(code);
+                
+                let html = '';
+                
+                if (!result.success) {
+                    html += `<div class="summary-box danger">❌ ${result.error}</div>`;
+                    
+                    if (result.data) {
+                        html += `<div class="error-details">البيانات المستخرجة من الكود: ${result.data.join(' | ')}</div>`;
+                    }
+                    
+                    loadingDiv.className = 'loading';
+                    resultDiv.innerHTML = html;
+                    resultDiv.className = 'result invalid';
+                    resultDiv.style.display = 'block';
+                    return;
+                }
+                
+                const dataArray = result.data;
+                
+                html += `<h3>📊 مقارنة البيانات</h3>`;
+                html += `<table class="comparison-table">
+                    <tr>
+                        <th>الحقل</th>
+                        <th>البيانات المرسلة</th>
+                        <th>بيانات الكود</th>
+                        <th>الحالة</th>
+                    </tr>`;
+                
+                let allMatch = true;
+                const today = new Date();
+                const todayFormatted = today.toLocaleDateString('ar-EG');
+                
+                for (let i = 0; i < FIELDS.length; i++) {
+                    const field = FIELDS[i];
+                    const sentValue = messageData[field] || 'غير موجود';
+                    const codeValue = (dataArray[i] || 'غير موجود');
+                    
+                    let status = '';
+                    let statusClass = '';
+                    
+                    if (sentValue === codeValue) {
+                        status = '✅ مطابق';
+                        statusClass = 'match';
+                    } else {
+                        status = '❌ غير مطابق';
+                        statusClass = 'mismatch';
+                        allMatch = false;
+                    }
+                    
+                    html += `<tr>
+                        <td class="field-name">${field}</td>
+                        <td>${sentValue}</td>
+                        <td>${codeValue}</td>
+                        <td class="${statusClass}">${status}</td>
+                    </tr>`;
+                }
+                
+                html += `</table>`;
+                
+                const sentDate = messageData.التاريخ || '';
+                const codeDate = dataArray[1] || '';
+                const recordType = messageData.النوع || 'تسجيل';
+                
+                if (sentDate === todayFormatted && codeDate === todayFormatted && allMatch) {
+                    html += `<div class="summary-box success">✅ تاريخ البيانات المرسلة مطابق لتاريخ اليوم</div>`;
+                    html += `<div class="summary-box success">✅ جميع البيانات مطابقة - لا يوجد تلاعب</div>`;
+                    resultDiv.className = 'result valid';
+                }
+                else if (sentDate === codeDate && sentDate !== todayFormatted && allMatch) {
+                    html += `<div class="summary-box danger">⚠️ تاريخ البيانات المرسلة غير متطابق مع تاريخ اليوم</div>`;
+                    
+                    let tamperMsg = '';
+                    if (recordType === 'حضور') {
+                        tamperMsg = '🚨 يوجد تلاعب في الحضور';
+                    } else if (recordType === 'انصراف') {
+                        tamperMsg = '🚨 يوجد تلاعب في الانصراف';
+                    } else {
+                        tamperMsg = '🚨 يوجد تلاعب في البيانات';
+                    }
+                    
+                    html += `<div class="tamper-message">${tamperMsg}</div>`;
+                    resultDiv.className = 'result date-tamper';
+                }
+                else {
+                    html += `<div class="summary-box danger">❌ يوجد تلاعب في البيانات - البيانات غير مطابقة</div>`;
+                    resultDiv.className = 'result invalid';
+                }
+                
+                loadingDiv.className = 'loading';
+                resultDiv.innerHTML = html;
+                resultDiv.style.display = 'block';
+                
+            } catch (error) {
+                loadingDiv.className = 'loading';
+                resultDiv.className = 'result invalid';
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <h3>❌ خطأ</h3>
+                    <div class="error-details">${error.message}</div>
+                `;
+            }
+        }, 500);
+    }
+    
+    // ============================================================
+    // وظائف مساعدة
+    // ============================================================
+    function pasteFromClipboard() {
+        const input = document.getElementById('codeInput');
+        
+        if (navigator.clipboard && navigator.clipboard.readText) {
+            navigator.clipboard.readText()
+                .then(text => {
+                    if (text && text.length > 0) {
+                        input.value = text;
+                        verifyMessage();
+                    }
+                })
+                .catch(() => {
+                    input.focus();
+                });
+        } else {
+            input.focus();
+        }
+    }
+    
+    function clearAll() {
+        document.getElementById('codeInput').value = '';
+        document.getElementById('result').className = 'result';
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('loading').className = 'loading';
+    }
+    
+    document.getElementById('codeInput').addEventListener('paste', function() {
+        setTimeout(verifyMessage, 600);
+    });
+    
+    document.getElementById('codeInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            verifyMessage();
+        }
+    });
+    
+    console.log('🔐 برنامج فحص كود التحقق جاهز');
+</script>
+
+</body>
+</html>
