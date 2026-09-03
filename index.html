@@ -89,9 +89,6 @@
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
         }
-        .btn-paste:active {
-            background: #1a6a8a;
-        }
         .btn-clear {
             background: linear-gradient(135deg, #e74c3c, #c0392b);
             color: white;
@@ -302,16 +299,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 <script>
     // ============================================================
-    // 🔐 مفاتيح التشفير - مخفية باستخدام Base64 وتقسيم
+    // 🔐 مفاتيح التشفير
     // ============================================================
     
-    // المفتاح الأساسي مشفر بـ Base64
     const _k1 = "TjBydGhDQGlyMCMyMDI2";
-    
-    // IV مشفر بـ Base64
     const _k2 = "NTM2NTYzNzU3MjY1MjE1NjY1NjM3NDMwNzIyMzMwMzIzMjM2";
     
-    // دالة فك التشفير (تشغيل المفاتيح)
     function getKeys() {
         return {
             SECRET_KEY: atob(_k1),
@@ -319,7 +312,7 @@
         };
     }
     
-    const FIELDS = ['الموظف', 'التاريخ', 'الوقت', 'الفرع', 'النوع'];
+    const FIELDS = ['الموظف', 'التاريخ', 'الوقت', 'الفرع', 'النوع', 'موديل الجهاز'];
     
     // ============================================================
     // دالة استخراج الكود من الرسالة
@@ -372,6 +365,9 @@
         match = message.match(/تسجيل\s*([^\s\n]+)/);
         if (match) data.النوع = match[1].trim().replace(/[*]/g, '');
         
+        match = message.match(/(?:الجهاز|موديل|جهاز)[:\s]+([^\n]+)/);
+        if (match) data['موديل الجهاز'] = match[1].trim().replace(/[*]/g, '');
+        
         if (!data.الموظف || !data.التاريخ || !data.الوقت || !data.الفرع) {
             const lines = message.split('\n');
             for (let line of lines) {
@@ -392,9 +388,14 @@
                     if (val && val.length > 0) data.الوقت = val;
                 }
                 
-                if ((cleanLine.includes('الفرع') || cleanLine.includes('فرع') || cleanLine.includes('الغرض') || cleanLine.includes('غر')) && !data.الفرع) {
-                    const val = cleanLine.replace(/[📍]/g, '').replace(/الفرع|فرع|الغرض|غر|:/g, '').trim();
+                if ((cleanLine.includes('الفرع') || cleanLine.includes('فرع')) && !data.الفرع) {
+                    const val = cleanLine.replace(/[📍]/g, '').replace(/الفرع|فرع|:/g, '').trim();
                     if (val && val.length > 0) data.الفرع = val;
+                }
+                
+                if ((cleanLine.includes('الجهاز') || cleanLine.includes('موديل') || cleanLine.includes('جهاز')) && !data['موديل الجهاز']) {
+                    const val = cleanLine.replace(/[📱]/g, '').replace(/الجهاز|جهاز|موديل|:/g, '').trim();
+                    if (val && val.length > 0 && val.length < 50) data['موديل الجهاز'] = val;
                 }
             }
         }
@@ -403,7 +404,7 @@
     }
     
     // ============================================================
-    // دالة فك التشفير (باستخدام المفاتيح المخفية)
+    // دالة فك التشفير
     // ============================================================
     function decryptCode(code) {
         try {
@@ -542,10 +543,10 @@
                     let statusClass = '';
                     
                     if (sentValue === codeValue) {
-                        status = '✅ مطابق';
+                        status = 'مطابق';
                         statusClass = 'match';
                     } else {
-                        status = '❌ غير مطابق';
+                        status = 'غير مطابق';
                         statusClass = 'mismatch';
                         allMatch = false;
                     }
