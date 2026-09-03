@@ -543,10 +543,12 @@
                     let statusClass = '';
                     
                     if (sentValue === codeValue) {
-                        status = 'مطابق';
+                        // ✅ تم التعديل: استبدال كلمة "مطابق" بـ علامة صح
+                        status = '✅';
                         statusClass = 'match';
                     } else {
-                        status = 'غير مطابق';
+                        // ❌ تم التعديل: استبدال كلمة "غير مطابق" بـ علامة خطأ
+                        status = '❌';
                         statusClass = 'mismatch';
                         allMatch = false;
                     }
