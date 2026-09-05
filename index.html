@@ -56,6 +56,7 @@
         .btn-clear { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
         .btn-settings { background: linear-gradient(135deg, #34495e, #2c3e50); color: white; }
         .btn-pdf { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+        .btn-hours { background: linear-gradient(135deg, #f39c12, #d35400); color: white; }
         
         .result { margin-top: 12px; padding: 12px; border-radius: 12px; display: none; }
         .result.valid { display: block; background: #d4edda; border: 2px solid #28a745; }
@@ -103,6 +104,7 @@
         .modal-box {
             background: white; border-radius: 20px; padding: 20px; width: 90%; max-width: 450px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3); direction: rtl; text-align: right;
+            max-height: 90vh; overflow-y: auto;
         }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .modal-header h3 { font-size: 18px; color: #1a1a2e; }
@@ -166,6 +168,7 @@
         <div class="btn-row">
             <button class="btn-settings" onclick="openModal('settingsModal')">⚙️ الإعدادات</button>
             <button class="btn-pdf" onclick="openModal('pdfModal')">📄 PDF</button>
+            <button class="btn-hours" onclick="openWorkHoursModal()">⏱️ ساعات العمل لموظف</button>
         </div>
         <div class="attendance-table-wrap">
             <table class="attendance-table" id="attendanceTable">
@@ -249,9 +252,39 @@
     </div>
 </div>
 
+<!-- ⏱️ نافذة حساب ساعات العمل لموظف -->
+<div class="modal-overlay" id="workHoursModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>⏱️ حساب ساعات العمل لموظف</h3>
+            <button class="modal-close" onclick="closeModal('workHoursModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>اختر الموظف:</label>
+                <select id="employeeSelect">
+                    <option value="">-- اختر موظف --</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>من تاريخ:</label>
+                <input type="date" id="hoursFromDate">
+            </div>
+            <div class="form-group">
+                <label>إلى تاريخ:</label>
+                <input type="date" id="hoursToDate">
+            </div>
+            <div id="hoursResult" style="margin-top: 15px; font-size: 13px;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-modal-close" onclick="closeModal('workHoursModal')">إغلاق</button>
+            <button class="btn-modal-action" style="background: #f39c12;" onclick="calculateWorkHours()">🧮 حساب الساعات</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 <script>
-    // 🔐 مفاتيح التشفير
     const _k1 = "TjBydGhDQGlyMCMyMDI2";
     const _k2 = "NTM2NTYzNzU3MjY1MjE1NjY1NjM3NDMwNzIyMzMwMzIzMjM2";
     function getKeys() { return { SECRET_KEY: atob(_k1), SECRET_IV: atob(_k2) }; }
@@ -265,13 +298,8 @@
         if (tab === 'records') loadAttendanceRecords();
     }
 
-    function openModal(modalId) {
-        document.getElementById(modalId).classList.add('active');
-    }
-
-    function closeModal(modalId) {
-        document.getElementById(modalId).classList.remove('active');
-    }
+    function openModal(modalId) { document.getElementById(modalId).classList.add('active'); }
+    function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
     
     function togglePdfDateInputs() {
         const scope = document.getElementById('pdfScope').value;
@@ -356,7 +384,7 @@
     
     function addAttendanceRecord(record, isMatch, type, isTamper) {
         let records = JSON.parse(localStorage.getItem('attendanceRecords')) || [];
-        const today = record.التاريخ || new Date().toLocaleDateString('ar-EG');
+        const today = record.التاريخ || new Date().toLocaleDateString('en-CA');
         const employee = record.الموظف || '';
         
         let existingIndex = -1;
@@ -382,7 +410,6 @@
             if (record.الفرع) existing.الفرع = record.الفرع;
             if (deviceName) existing.الجهاز = deviceName;
 
-            // تحديث منطق الحالة النهائي
             if (existing.حضور_تلاعب) {
                 existing.الحالة = 'تلاعب في الحضور';
             } else if (existing.انصراف_تلاعب) {
@@ -472,6 +499,7 @@
             resultDiv.innerHTML = '⚠️ يرجى لصق رسالة الواتساب أولاً';
             return;
         }
+
         setTimeout(() => {
             try {
                 const code = extractCodeFromMessage(inputText);
@@ -564,6 +592,38 @@
         }
     }
 
+    // 🛠️ دالة تحويل التاريخ مع دعم الصيغ والأرقام العربية
+    function getDateTimestamp(dateStr) {
+        if (!dateStr) return null;
+        
+        let str = String(dateStr).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).trim();
+        let parts = str.match(/\d+/g);
+        if (!parts || parts.length < 3) return null;
+
+        let year, month, day;
+
+        if (parts[0].length >= 3) {
+            year = parseInt(parts[0], 10);
+            month = parseInt(parts[1], 10);
+            day = parseInt(parts[2], 10);
+        } else if (parts[2].length >= 3) {
+            day = parseInt(parts[0], 10);
+            month = parseInt(parts[1], 10);
+            year = parseInt(parts[2], 10);
+        } else {
+            year = parseInt(parts[0], 10);
+            month = parseInt(parts[1], 10);
+            day = parseInt(parts[2], 10);
+        }
+
+        if (year < 100) year += 2000;
+        if (year > 20000) year = Math.floor(year / 10);
+
+        if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+
+        return new Date(year, month - 1, day).getTime();
+    }
+
     function deleteRangeRecords() {
         const fromStr = document.getElementById('deleteFromDate').value;
         const toStr = document.getElementById('deleteToDate').value;
@@ -572,15 +632,14 @@
             return;
         }
         let records = JSON.parse(localStorage.getItem('attendanceRecords')) || [];
-        const fromDate = new Date(fromStr);
-        const toDate = new Date(toStr);
-        toDate.setHours(23, 59, 59);
+        const fromTime = getDateTimestamp(fromStr);
+        const toTime = getDateTimestamp(toStr);
 
         const filtered = records.filter(r => {
             if (!r.التاريخ) return true;
-            const rDate = parseDateString(r.التاريخ);
-            if (!rDate) return true;
-            return !(rDate >= fromDate && rDate <= toDate);
+            const rTime = getDateTimestamp(r.التاريخ);
+            if (!rTime) return true;
+            return !(rTime >= fromTime && rTime <= toTime);
         });
 
         if (confirm(`هل أنت متأكد من مسح السجلات بين ${fromStr} و ${toStr}؟`)) {
@@ -589,15 +648,6 @@
             closeModal('settingsModal');
             alert('تم مسح السجلات في الفترة المحددة بنجاح');
         }
-    }
-
-    function parseDateString(dateStr) {
-        if (!dateStr) return null;
-        let parts = dateStr.split('/');
-        if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
-        parts = dateStr.split('-');
-        if (parts.length === 3) return new Date(parts[0], parts[1] - 1, parts[2]);
-        return new Date(dateStr);
     }
     
     function exportRecords() {
@@ -610,7 +660,7 @@
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `سجل_الحضور_${new Date().toLocaleDateString('ar-EG')}.csv`;
+        link.download = `سجل_الحضور_${new Date().toLocaleDateString('en-CA')}.csv`;
         link.click();
     }
 
@@ -655,56 +705,54 @@
             const fromStr = document.getElementById('pdfFromDate').value;
             const toStr = document.getElementById('pdfToDate').value;
             if (!fromStr || !toStr) {
-                alert('يرجى تحديد تاريخ البداية والنهاية أولاً');
+                alert('يرجى تحديد تاريخ البداية والنهاية');
                 return;
             }
-            const fromDate = new Date(fromStr);
-            const toDate = new Date(toStr);
-            toDate.setHours(23, 59, 59);
+            const fromTime = getDateTimestamp(fromStr);
+            const toTime = getDateTimestamp(toStr);
 
             records = records.filter(r => {
-                if (!r.التاريخ) return false;
-                const rDate = parseDateString(r.التاريخ);
-                if (!rDate) return false;
-                return rDate >= fromDate && rDate <= toDate;
+                const dTime = getDateTimestamp(r.التاريخ);
+                return dTime && (dTime >= fromTime && dTime <= toTime);
             });
         }
 
         if (records.length === 0) {
-            alert('لا توجد سجلات ضمن النطاق المخصص للتصدير');
+            alert('لا توجد سجلات مطابقة للطباعة');
             return;
         }
 
         closeModal('pdfModal');
 
         const printWindow = window.open('', '_blank');
-        let rowsHtml = '';
+        let tableRows = '';
         records.forEach((r, i) => {
-            const statusClass = r.الحالة.includes('تلاعب') ? 'color: red; font-weight: bold;' : '';
-            rowsHtml += `
+            tableRows += `
                 <tr>
                     <td>${i + 1}</td>
                     <td>${r.الموظف || ''}</td>
                     <td>${r.التاريخ || ''}</td>
-                    <td>${r.حضور || '-'}</td>
-                    <td>${r.انصراف || '-'}</td>
+                    <td>${r.حضور || ''}</td>
+                    <td>${r.انصراف || ''}</td>
                     <td>${r.الفرع || ''}</td>
                     <td>${r.الجهاز || ''}</td>
-                    <td style="${statusClass}">${r.الحالة || 'منضبط'}</td>
+                    <td>${r.الحالة || 'منضبط'}</td>
                 </tr>
             `;
         });
 
         printWindow.document.write(`
+            <!DOCTYPE html>
             <html lang="ar" dir="rtl">
             <head>
+                <meta charset="UTF-8">
                 <title>تقرير سجل الحضور والإنصراف</title>
                 <style>
-                    body { font-family: 'Tahoma', Arial, sans-serif; padding: 20px; direction: rtl; text-align: right; }
+                    body { font-family: 'Tahoma', sans-serif; direction: rtl; padding: 20px; }
                     h2 { text-align: center; color: #1a1a2e; margin-bottom: 5px; }
-                    .subtitle { text-align: center; font-size: 13px; color: #666; margin-bottom: 20px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
-                    th, td { border: 1px solid #aaa; padding: 8px 5px; text-align: center; }
+                    p.date { text-align: center; color: #666; font-size: 12px; margin-bottom: 20px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th, td { border: 1px solid #444; padding: 8px 5px; text-align: center; font-size: 12px; }
                     th { background-color: #1a1a2e; color: white; }
                     tr:nth-child(even) { background-color: #f9f9f9; }
                     @media print {
@@ -713,8 +761,8 @@
                 </style>
             </head>
             <body>
-                <h2>📊 تقرير سجل الحضور والانصراف</h2>
-                <div class="subtitle">تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')}</div>
+                <h2>📊 تقرير سجل الحضور والإنصراف</h2>
+                <p class="date">تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')} - ${new Date().toLocaleTimeString('ar-EG')}</p>
                 <table>
                     <thead>
                         <tr>
@@ -722,27 +770,132 @@
                             <th>وقت الانصراف</th><th>الفرع</th><th>الجهاز</th><th>الحالة</th>
                         </tr>
                     </thead>
-                    <tbody>${rowsHtml}</tbody>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
                 </table>
+                <script>
+                    window.onload = function() { window.print(); }
+                <\/script>
             </body>
             </html>
         `);
-
         printWindow.document.close();
-        setTimeout(() => {
-            printWindow.print();
-        }, 500);
     }
-    
-    document.getElementById('codeInput').addEventListener('paste', function() {
-        setTimeout(verifyMessage, 600);
-    });
-    
+
+    function openWorkHoursModal() {
+        const records = JSON.parse(localStorage.getItem('attendanceRecords')) || [];
+        const employeeSelect = document.getElementById('employeeSelect');
+        employeeSelect.innerHTML = '<option value="">-- اختر موظف --</option>';
+
+        const employees = [...new Set(records.map(r => String(r.الموظف)).filter(Boolean))];
+        employees.forEach(emp => {
+            const opt = document.createElement('option');
+            opt.value = emp;
+            opt.textContent = emp;
+            employeeSelect.appendChild(opt);
+        });
+
+        document.getElementById('hoursResult').innerHTML = '';
+        openModal('workHoursModal');
+    }
+
+    // 🛠️ دالة تحويل الوقت المحدثة (تدعم الأرقام العربية، الثواني، وحروف ص/م)
+    function parseTimeToMinutes(timeStr) {
+        if (!timeStr) return null;
+        let str = String(timeStr).trim();
+
+        // 1. تحديد هل الوقت مساءً أم صباحاً
+        const isPM = str.includes('م') || str.includes('PM') || str.includes('pm');
+        const isAM = str.includes('ص') || str.includes('AM') || str.includes('am');
+
+        // 2. تحويل الأرقام العربية/الهندية (٠١٢٣٤٥٦٧٨٩) إلى إنجليزية
+        str = str.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+
+        // 3. استخراج الأرقام
+        const parts = str.match(/\d+/g);
+        if (!parts || parts.length < 2) return null;
+
+        let hours = parseInt(parts[0], 10);
+        let minutes = parseInt(parts[1], 10);
+
+        if (isNaN(hours) || isNaN(minutes)) return null;
+
+        // 4. ضبط نظام 12 ساعة
+        if (isPM && hours < 12) hours += 12;
+        if (isAM && hours === 12) hours = 0;
+
+        return hours * 60 + minutes;
+    }
+
+    function calculateWorkHours() {
+        const employee = String(document.getElementById('employeeSelect').value).trim();
+        const fromStr = document.getElementById('hoursFromDate').value;
+        const toStr = document.getElementById('hoursToDate').value;
+        const resultDiv = document.getElementById('hoursResult');
+
+        if (!employee) {
+            alert('يرجى اختيار الموظف أولاً');
+            return;
+        }
+        if (!fromStr || !toStr) {
+            alert('يرجى تحديد تاريخ البداية والنهاية');
+            return;
+        }
+
+        const fromTime = getDateTimestamp(fromStr);
+        const toTime = getDateTimestamp(toStr);
+
+        let records = JSON.parse(localStorage.getItem('attendanceRecords')) || [];
+
+        const empRecords = records.filter(r => {
+            if (String(r.الموظف).trim() !== employee) return false;
+            const dTime = getDateTimestamp(r.التاريخ);
+            return dTime && (dTime >= fromTime && dTime <= toTime);
+        });
+
+        if (empRecords.length === 0) {
+            resultDiv.innerHTML = `<div class="summary-box warning">لا توجد سجلات للموظف <b>${employee}</b> في هذه الفترة.</div>`;
+            return;
+        }
+
+        let totalMinutes = 0;
+        let daysCalculated = 0;
+        let detailsHtml = '<table class="comparison-table" style="margin-top:10px;"><tr><th>التاريخ</th><th>حضور</th><th>انصراف</th><th>المدة</th></tr>';
+
+        empRecords.forEach(r => {
+            const inMins = parseTimeToMinutes(r.حضور);
+            const outMins = parseTimeToMinutes(r.انصراف);
+
+            if (inMins !== null && outMins !== null && outMins >= inMins) {
+                const diff = outMins - inMins;
+                totalMinutes += diff;
+                daysCalculated++;
+                const h = Math.floor(diff / 60);
+                const m = diff % 60;
+                detailsHtml += `<tr><td>${r.التاريخ}</td><td>${r.حضور}</td><td>${r.انصراف}</td><td>${h} ساعة و ${m} دقيقة</td></tr>`;
+            } else {
+                detailsHtml += `<tr><td>${r.التاريخ}</td><td>${r.حضور || '-'}</td><td>${r.انصراف || '-'}</td><td>غير مكتمل</td></tr>`;
+            }
+        });
+
+        detailsHtml += '</table>';
+
+        const totalHours = Math.floor(totalMinutes / 60);
+        const remainingMinutes = totalMinutes % 60;
+
+        resultDiv.innerHTML = `
+            <div class="summary-box success" style="margin-bottom:8px;">
+                ⏱️ إجمالي ساعات العمل: <b>${totalHours}</b> ساعة و <b>${remainingMinutes}</b> دقيقة<br>
+                <small>(عدد الأيام المكتملة: ${daysCalculated} يوم)</small>
+            </div>
+            ${detailsHtml}
+        `;
+    }
+
     window.onload = function() {
         loadAttendanceRecords();
     };
-    
-    console.log('👨‍💼 نظام الحضور - المدير جاهز');
 </script>
 
 </body>
