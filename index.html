@@ -3,275 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>فحص كود التحقق</title>
+    <title>نظام الحضور - المدير</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Tahoma', Arial, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
             margin: 0;
-            padding: 10px;
+            padding: 15px;
             direction: rtl;
         }
         .container {
             background: white;
-            max-width: 600px;
+            max-width: 950px;
             width: 100%;
             padding: 20px 16px;
             border-radius: 25px;
             box-shadow: 0 15px 50px rgba(0,0,0,0.4);
         }
-        .header {
-            text-align: center;
-            margin-bottom: 12px;
+        .header { text-align: center; margin-bottom: 12px; }
+        .header h1 { color: #1a1a2e; font-size: 22px; margin-bottom: 3px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+        .tabs button {
+            flex: 1; padding: 10px; border: none; border-radius: 10px; font-size: 14px;
+            font-weight: bold; cursor: pointer; transition: all 0.3s ease;
+            background: #e9ecef; color: #333;
         }
-        .header h1 {
-            color: #1a1a2e;
-            font-size: 22px;
-            margin-bottom: 3px;
-        }
-        .input-area {
-            margin: 8px 0;
-        }
+        .tabs button.active { background: #3498db; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .input-area { margin: 8px 0; }
         .code-input {
-            width: 100%;
-            min-height: 120px;
-            padding: 10px 12px;
-            border: 2px solid #ddd;
-            border-radius: 12px;
-            font-size: 12px;
-            font-family: 'Courier New', monospace;
-            resize: vertical;
-            transition: all 0.3s ease;
-            direction: ltr;
-            text-align: left;
+            width: 100%; min-height: 120px; padding: 10px 12px;
+            border: 2px solid #ddd; border-radius: 12px; font-size: 12px;
+            font-family: 'Courier New', monospace; resize: vertical;
+            transition: all 0.3s ease; direction: ltr; text-align: left;
             background: #fafafa;
         }
-        .code-input:focus {
-            border-color: #3498db;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(52,152,219,0.2);
-            background: white;
-        }
-        .btn-row {
-            display: flex;
-            gap: 8px;
-            margin: 10px 0;
-            flex-wrap: wrap;
-        }
+        .code-input:focus { border-color: #3498db; outline: none; box-shadow: 0 0 0 3px rgba(52,152,219,0.2); background: white; }
+        .btn-row { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
         .btn-row button {
-            flex: 1;
-            min-width: 80px;
-            padding: 10px 10px;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            flex: 1; min-width: 80px; padding: 10px 10px; border: none; border-radius: 10px;
+            font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;
         }
-        .btn-row button:active {
-            transform: scale(0.95);
+        .btn-row button:active { transform: scale(0.95); }
+        .btn-check { background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; }
+        .btn-paste { background: linear-gradient(135deg, #3498db, #2980b9); color: white; }
+        .btn-clear { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+        .btn-settings { background: linear-gradient(135deg, #34495e, #2c3e50); color: white; }
+        .btn-pdf { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+        
+        .result { margin-top: 12px; padding: 12px; border-radius: 12px; display: none; }
+        .result.valid { display: block; background: #d4edda; border: 2px solid #28a745; }
+        .result.invalid { display: block; background: #f8d7da; border: 2px solid #dc3545; }
+        .result.warning { display: block; background: #fff3cd; border: 2px solid #ffc107; }
+        .result h3 { margin-bottom: 8px; font-size: 15px; text-align: center; }
+        .comparison-table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 13px; }
+        .comparison-table th { background: #f0f0f0; padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-size: 12px; }
+        .comparison-table td { padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-size: 12px; word-break: break-word; }
+        .comparison-table .match { color: #28a745; font-weight: bold; }
+        .comparison-table .mismatch { color: #dc3545; font-weight: bold; }
+        .comparison-table .field-name { font-weight: bold; background: #f8f9fa; }
+        .summary-box { margin-top: 8px; padding: 8px 12px; border-radius: 8px; text-align: center; font-size: 13px; font-weight: bold; }
+        .summary-box.success { background: #d4edda; color: #155724; border: 2px solid #28a745; }
+        .summary-box.danger { background: #f8d7da; color: #721c24; border: 2px solid #dc3545; }
+        .summary-box.warning { background: #fff3cd; color: #856404; border: 2px solid #ffc107; }
+        .loading { display: none; text-align: center; padding: 6px; }
+        .loading.show { display: block; }
+        .loading::after { content: '⏳ جاري الفحص...'; animation: pulse 1s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .error-details { background: #f8f9fa; padding: 10px; border-radius: 8px; margin: 6px 0; font-size: 12px; color: #555; direction: rtl; text-align: right; }
+        .attendance-table-wrap { overflow-x: auto; margin-top: 12px; }
+        .attendance-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .attendance-table th { background: #1a1a2e; color: white; padding: 8px 6px; text-align: center; border: 1px solid #333; font-size: 12px; }
+        .attendance-table td { padding: 6px 4px; text-align: center; border: 1px solid #ddd; font-size: 12px; }
+        .attendance-table .absent { background: #f8d7da !important; color: #721c24; }
+        .attendance-table .absent td { background: #f8d7da !important; color: #721c24; }
+        .attendance-table .tamper-row { background: #f8d7da !important; color: #721c24; font-weight: bold; }
+        .attendance-table .tamper-row td { background: #f8d7da !important; color: #721c24; }
+        .attendance-table .present td { background: white; }
+        .stats { display: flex; gap: 15px; flex-wrap: wrap; margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 12px; }
+        .stats .stat-item { flex: 1; text-align: center; min-width: 80px; }
+        .stats .stat-item .number { font-size: 20px; font-weight: bold; color: #1a1a2e; }
+        .stats .stat-item .label { font-size: 11px; color: #7f8c8d; }
+        .stats .stat-item .number.present { color: #27ae60; }
+        .stats .stat-item .number.absent { color: #e74c3c; }
+        .stats .stat-item .number.tamper { color: #c0392b; }
+
+        /* Modal Popup System */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center;
         }
-        .btn-check {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-            color: white;
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: white; border-radius: 20px; padding: 20px; width: 90%; max-width: 450px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); direction: rtl; text-align: right;
         }
-        .btn-paste {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .modal-header h3 { font-size: 18px; color: #1a1a2e; }
+        .modal-close { cursor: pointer; font-size: 20px; font-weight: bold; color: #888; border: none; background: none; }
+        .modal-body { margin-bottom: 15px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #333; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px;
         }
-        .btn-clear {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            color: white;
-        }
-        .result {
-            margin-top: 12px;
-            padding: 12px;
-            border-radius: 12px;
-            display: none;
-        }
-        .result.valid {
-            display: block;
-            background: #d4edda;
-            border: 2px solid #28a745;
-        }
-        .result.invalid {
-            display: block;
-            background: #f8d7da;
-            border: 2px solid #dc3545;
-        }
-        .result.warning {
-            display: block;
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-        }
-        .result.date-tamper {
-            display: block;
-            background: #f8d7da;
-            border: 3px solid #dc3545;
-            box-shadow: 0 0 20px rgba(220, 53, 69, 0.3);
-        }
-        .result h3 {
-            margin-bottom: 8px;
-            font-size: 15px;
-            text-align: center;
-        }
-        .comparison-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 6px 0;
-            font-size: 13px;
-        }
-        .comparison-table th {
-            background: #f0f0f0;
-            padding: 6px 4px;
-            text-align: center;
-            border: 1px solid #ddd;
-            font-size: 12px;
-        }
-        .comparison-table td {
-            padding: 6px 4px;
-            text-align: center;
-            border: 1px solid #ddd;
-            font-size: 12px;
-            word-break: break-word;
-        }
-        .comparison-table .match {
-            color: #28a745;
-            font-weight: bold;
-        }
-        .comparison-table .mismatch {
-            color: #dc3545;
-            font-weight: bold;
-        }
-        .comparison-table .field-name {
-            font-weight: bold;
-            background: #f8f9fa;
-        }
-        .result.date-tamper .comparison-table th {
-            background: #dc3545;
-            color: white;
-        }
-        .result.date-tamper .comparison-table td {
-            border-color: #dc3545;
-        }
-        .result.date-tamper .comparison-table .match {
-            color: #28a745;
-        }
-        .result.date-tamper .comparison-table .mismatch {
-            color: #dc3545;
-        }
-        .result.date-tamper .comparison-table .field-name {
-            background: #fce4e4;
-        }
-        .summary-box {
-            margin-top: 8px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 13px;
-            font-weight: bold;
-        }
-        .summary-box.success {
-            background: #d4edda;
-            color: #155724;
-            border: 2px solid #28a745;
-        }
-        .summary-box.danger {
-            background: #f8d7da;
-            color: #721c24;
-            border: 2px solid #dc3545;
-        }
-        .summary-box.warning {
-            background: #fff3cd;
-            color: #856404;
-            border: 2px solid #ffc107;
-        }
-        .tamper-message {
-            margin-top: 8px;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 15px;
-            font-weight: bold;
-            background: #dc3545;
-            color: white;
-            border: 2px solid #a71d2a;
-            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
-            animation: pulse-red 1.5s ease-in-out infinite;
-        }
-        @keyframes pulse-red {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-        }
-        .error-details {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 8px;
-            margin: 6px 0;
-            font-size: 12px;
-            color: #555;
-            direction: rtl;
-            text-align: right;
-        }
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 6px;
-        }
-        .loading.show {
-            display: block;
-        }
-        .loading::after {
-            content: '⏳ جاري الفحص...';
-            animation: pulse 1s ease-in-out infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-        @media (max-width: 400px) {
-            .container {
-                padding: 12px 10px;
-            }
-            .header h1 {
-                font-size: 18px;
-            }
-            .btn-row button {
-                min-width: 50px;
-                padding: 8px 6px;
-                font-size: 12px;
-            }
-            .comparison-table {
-                font-size: 11px;
-            }
-            .comparison-table th,
-            .comparison-table td {
-                padding: 4px 3px;
-                font-size: 11px;
-            }
-            .summary-box {
-                font-size: 11px;
-                padding: 6px 8px;
-            }
-            .tamper-message {
-                font-size: 13px;
-                padding: 8px;
-            }
-            .code-input {
-                min-height: 100px;
-                padding: 8px 10px;
-                font-size: 11px;
-            }
+        .modal-footer { display: flex; gap: 8px; justify-content: flex-end; }
+        .modal-footer button { padding: 8px 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; }
+        .btn-modal-close { background: #ccc; color: #333; }
+        .btn-modal-action { background: #3498db; color: white; }
+
+        @media (max-width: 600px) {
+            .container { padding: 12px 10px; }
+            .header h1 { font-size: 18px; }
+            .btn-row button { min-width: 50px; padding: 8px 6px; font-size: 12px; }
+            .comparison-table { font-size: 11px; }
+            .comparison-table th, .comparison-table td { padding: 4px 3px; font-size: 11px; }
+            .attendance-table { font-size: 11px; }
+            .attendance-table th, .attendance-table td { padding: 4px 3px; font-size: 11px; }
+            .code-input { min-height: 100px; padding: 8px 10px; font-size: 11px; }
+            .tabs button { font-size: 12px; padding: 8px 4px; }
         }
     </style>
 </head>
@@ -279,201 +135,336 @@
 
 <div class="container">
     <div class="header">
-        <h1>🔐 فحص كود التحقق</h1>
+        <h1>👨‍💼 نظام الحضور - المدير</h1>
     </div>
 
-    <div class="input-area">
-        <textarea class="code-input" id="codeInput" placeholder=""></textarea>
+    <div class="tabs">
+        <button class="active" onclick="switchTab('verify')">🔍 فحص الرسالة</button>
+        <button onclick="switchTab('records')">📊 سجل الحضور</button>
     </div>
 
-    <div class="btn-row">
-        <button class="btn-check" onclick="verifyMessage()">🔍 فحص</button>
-        <button class="btn-paste" onclick="pasteFromClipboard()">📋 لصق</button>
-        <button class="btn-clear" onclick="clearAll()">🗑️ مسح</button>
+    <div id="tab-verify" class="tab-content active">
+        <div class="input-area">
+            <textarea class="code-input" id="codeInput" placeholder="الصق رسالة واتساب هنا..."></textarea>
+        </div>
+        <div class="btn-row">
+            <button class="btn-check" onclick="verifyMessage()">🔍 فحص</button>
+            <button class="btn-paste" onclick="pasteFromClipboard()">📋 لصق</button>
+            <button class="btn-clear" onclick="clearAll()">🗑️ مسح</button>
+        </div>
+        <div class="loading" id="loading"></div>
+        <div id="result" class="result"></div>
     </div>
 
-    <div class="loading" id="loading"></div>
-    <div id="result" class="result"></div>
+    <div id="tab-records" class="tab-content">
+        <div class="stats" id="stats">
+            <div class="stat-item"><div class="number" id="totalCount">0</div><div class="label">إجمالي السجلات</div></div>
+            <div class="stat-item"><div class="number present" id="presentCount">0</div><div class="label">✅ حضور</div></div>
+            <div class="stat-item"><div class="number absent" id="absentCount">0</div><div class="label">📌 إجازة</div></div>
+            <div class="stat-item"><div class="number tamper" id="tamperCount">0</div><div class="label">⚠️ تلاعب</div></div>
+        </div>
+        <div class="btn-row">
+            <button class="btn-settings" onclick="openModal('settingsModal')">⚙️ الإعدادات</button>
+            <button class="btn-pdf" onclick="openModal('pdfModal')">📄 PDF</button>
+        </div>
+        <div class="attendance-table-wrap">
+            <table class="attendance-table" id="attendanceTable">
+                <thead>
+                    <tr>
+                        <th>م</th><th>الموظف</th><th>التاريخ</th><th>وقت الحضور</th>
+                        <th>وقت الانصراف</th><th>الفرع</th><th>الجهاز</th><th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody id="attendanceBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ⚙️ نافذة الإعدادات -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>⚙️ إعدادات السجل</h3>
+            <button class="modal-close" onclick="closeModal('settingsModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>تصدير واستيراد البيانات:</label>
+                <div class="btn-row">
+                    <button class="btn-paste" onclick="exportRecords()">📤 تصدير CSV</button>
+                    <button class="btn-check" onclick="document.getElementById('importFileInput').click()">📥 استيراد CSV</button>
+                    <input type="file" id="importFileInput" accept=".csv" style="display:none" onchange="importRecords(event)">
+                </div>
+            </div>
+            <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+            <div class="form-group">
+                <label>مسح فترة محددة:</label>
+                <div class="form-group">
+                    <label>من تاريخ:</label>
+                    <input type="date" id="deleteFromDate">
+                </div>
+                <div class="form-group">
+                    <label>إلى تاريخ:</label>
+                    <input type="date" id="deleteToDate">
+                </div>
+                <button class="btn-clear" style="width: 100%;" onclick="deleteRangeRecords()">🗑️ مسح الفترة المحددة</button>
+            </div>
+            <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+            <button class="btn-clear" style="width: 100%; background: #900;" onclick="clearRecords()">🗑️ مسح جميع السجلات بالكامل</button>
+        </div>
+    </div>
+</div>
+
+<!-- 📄 نافذة تصدير PDF -->
+<div class="modal-overlay" id="pdfModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>📄 تصدير تقرير PDF</h3>
+            <button class="modal-close" onclick="closeModal('pdfModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>نطاق التقرير:</label>
+                <select id="pdfScope" onchange="togglePdfDateInputs()">
+                    <option value="all">الكل</option>
+                    <option value="range">تاريخ من / إلى</option>
+                </select>
+            </div>
+            <div id="pdfDateContainer" style="display: none;">
+                <div class="form-group">
+                    <label>من تاريخ:</label>
+                    <input type="date" id="pdfFromDate">
+                </div>
+                <div class="form-group">
+                    <label>إلى تاريخ:</label>
+                    <input type="date" id="pdfToDate">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-modal-close" onclick="closeModal('pdfModal')">إلغاء</button>
+            <button class="btn-modal-action" onclick="generatePDF()">🖨️ طباعة / حفظ PDF</button>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 <script>
-    // ============================================================
     // 🔐 مفاتيح التشفير
-    // ============================================================
-    
     const _k1 = "TjBydGhDQGlyMCMyMDI2";
     const _k2 = "NTM2NTYzNzU3MjY1MjE1NjY1NjM3NDMwNzIyMzMwMzIzMjM2";
-    
-    function getKeys() {
-        return {
-            SECRET_KEY: atob(_k1),
-            SECRET_IV: atob(_k2)
-        };
-    }
-    
+    function getKeys() { return { SECRET_KEY: atob(_k1), SECRET_IV: atob(_k2) }; }
     const FIELDS = ['الموظف', 'التاريخ', 'الوقت', 'الفرع', 'النوع', 'موديل الجهاز'];
     
-    // ============================================================
-    // دالة استخراج الكود من الرسالة
-    // ============================================================
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tabs button').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        document.querySelector(`.tabs button[onclick="switchTab('${tab}')"]`).classList.add('active');
+        if (tab === 'records') loadAttendanceRecords();
+    }
+
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+    
+    function togglePdfDateInputs() {
+        const scope = document.getElementById('pdfScope').value;
+        document.getElementById('pdfDateContainer').style.display = (scope === 'range') ? 'block' : 'none';
+    }
+    
     function extractCodeFromMessage(message) {
         const patterns = [
             /كود[:\s]+([A-Za-z0-9_\-\.]+)/,
             /🔐\s*كود[:\s]+([A-Za-z0-9_\-\.]+)/,
             /الكود[:\s]+([A-Za-z0-9_\-\.]+)/
         ];
-        
         for (let pattern of patterns) {
             const match = message.match(pattern);
-            if (match && match[1] && match[1].length > 10) {
-                return match[1];
-            }
+            if (match && match[1] && match[1].length > 10) return match[1];
         }
-        
-        const u2fMatch = message.match(/U2F[A-Za-z0-9_\-\.]+/);
-        if (u2fMatch && u2fMatch[0].length > 20) {
-            return u2fMatch[0];
-        }
-        
         const longMatch = message.match(/[A-Za-z0-9_\-\.]{30,}/);
-        if (longMatch) {
-            return longMatch[0];
-        }
-        
-        return null;
+        return longMatch ? longMatch[0] : null;
     }
     
-    // ============================================================
-    // دالة استخراج البيانات من الرسالة
-    // ============================================================
     function extractDataFromMessage(message) {
         const data = {};
-        
         let match = message.match(/(?:الموظف|موظف)[:\s]+([^\n]+)/);
         if (match) data.الموظف = match[1].trim().replace(/[*]/g, '');
-        
         match = message.match(/(?:التاريخ|تاريخ)[:\s]+([^\n]+)/);
         if (match) data.التاريخ = match[1].trim().replace(/[*]/g, '');
-        
         match = message.match(/(?:الوقت|وقت)[:\s]+([^\n]+)/);
         if (match) data.الوقت = match[1].trim().replace(/[*]/g, '');
-        
         match = message.match(/(?:الفرع|فرع|الغرض|غر)[:\s]+([^\n]+)/);
         if (match) data.الفرع = match[1].trim().replace(/[*]/g, '');
-        
         match = message.match(/تسجيل\s*([^\s\n]+)/);
         if (match) data.النوع = match[1].trim().replace(/[*]/g, '');
-        
         match = message.match(/(?:الجهاز|موديل|جهاز)[:\s]+([^\n]+)/);
         if (match) data['موديل الجهاز'] = match[1].trim().replace(/[*]/g, '');
-        
-        if (!data.الموظف || !data.التاريخ || !data.الوقت || !data.الفرع) {
-            const lines = message.split('\n');
-            for (let line of lines) {
-                const cleanLine = line.replace(/[*]/g, '').trim();
-                
-                if ((cleanLine.includes('الموظف') || cleanLine.includes('موظف')) && !data.الموظف) {
-                    const val = cleanLine.replace(/[👤]/g, '').replace(/الموظف|موظف|:/g, '').trim();
-                    if (val && val.length > 0) data.الموظف = val;
-                }
-                
-                if ((cleanLine.includes('التاريخ') || cleanLine.includes('تاريخ')) && !data.التاريخ) {
-                    const val = cleanLine.replace(/[📅]/g, '').replace(/التاريخ|تاريخ|:/g, '').trim();
-                    if (val && val.length > 0) data.التاريخ = val;
-                }
-                
-                if ((cleanLine.includes('الوقت') || cleanLine.includes('وقت')) && !data.الوقت) {
-                    const val = cleanLine.replace(/[⏰]/g, '').replace(/الوقت|وقت|:/g, '').trim();
-                    if (val && val.length > 0) data.الوقت = val;
-                }
-                
-                if ((cleanLine.includes('الفرع') || cleanLine.includes('فرع')) && !data.الفرع) {
-                    const val = cleanLine.replace(/[📍]/g, '').replace(/الفرع|فرع|:/g, '').trim();
-                    if (val && val.length > 0) data.الفرع = val;
-                }
-                
-                if ((cleanLine.includes('الجهاز') || cleanLine.includes('موديل') || cleanLine.includes('جهاز')) && !data['موديل الجهاز']) {
-                    const val = cleanLine.replace(/[📱]/g, '').replace(/الجهاز|جهاز|موديل|:/g, '').trim();
-                    if (val && val.length > 0 && val.length < 50) data['موديل الجهاز'] = val;
-                }
-            }
-        }
-        
         return data;
     }
     
-    // ============================================================
-    // دالة فك التشفير
-    // ============================================================
     function decryptCode(code) {
         try {
             const keys = getKeys();
             const parts = code.split('.');
-            if (parts.length !== 2) {
-                return { success: false, error: 'تنسيق الكود غير صحيح' };
-            }
-            
+            if (parts.length !== 2) return { success: false, error: 'تنسيق الكود غير صحيح' };
             const encryptedPart = parts[0];
             const receivedHmac = parts[1];
-            
-            let base64Code = encryptedPart
-                .replace(/-/g, '+')
-                .replace(/_/g, '/');
-            
-            while (base64Code.length % 4 !== 0) {
-                base64Code += '=';
-            }
-            
+            let base64Code = encryptedPart.replace(/-/g, '+').replace(/_/g, '/');
+            while (base64Code.length % 4 !== 0) base64Code += '=';
             const decrypted = CryptoJS.AES.decrypt(base64Code, keys.SECRET_KEY, {
                 iv: CryptoJS.enc.Hex.parse(keys.SECRET_IV),
                 mode: CryptoJS.mode.CBC,
                 padding: CryptoJS.pad.Pkcs7
             });
-            
             const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
-            
             if (!decryptedText || decryptedText.length === 0) {
-                return { success: false, error: 'فشل فك التشفير - المفتاح غير صحيح' };
+                return { success: false, error: 'فشل فك التشفير' };
             }
-            
             const expectedHmac = CryptoJS.HmacSHA256(encryptedPart, keys.SECRET_KEY)
-                .toString(CryptoJS.enc.Base64)
-                .replace(/=/g, '')
-                .replace(/\+/g, '-')
-                .replace(/\//g, '_')
-                .substring(0, 16);
-            
+                .toString(CryptoJS.enc.Base64).replace(/=/g, '').replace(/\+/g, '-')
+                .replace(/\//g, '_').substring(0, 16);
             if (receivedHmac !== expectedHmac) {
-                return { 
-                    success: false, 
-                    error: 'HMAC غير مطابق - تم التلاعب بالبيانات',
-                    data: decryptedText.split('|')
-                };
+                return { success: false, error: 'HMAC غير مطابق - تلاعب', data: decryptedText.split('|') };
             }
-            
-            return {
-                success: true,
-                data: decryptedText.split('|')
-            };
-            
+            return { success: true, data: decryptedText.split('|') };
         } catch (error) {
             return { success: false, error: error.message };
         }
     }
     
-    // ============================================================
-    // دالة فحص الرسالة الرئيسية
-    // ============================================================
+    function getDeviceName(code) {
+        const DEVICE_DATABASE = {
+            '23129RAA4G': 'Redmi Note 13', '2312DRAABG': 'Redmi Note 13 Pro',
+            'SM-G998B': 'Samsung Galaxy S21 Ultra', 'SM-G990B': 'Samsung Galaxy S21 FE',
+            'SM-A536B': 'Samsung Galaxy A53', 'SM-A528B': 'Samsung Galaxy A52s',
+            'SM-N986B': 'Samsung Galaxy Note 20 Ultra',
+            'iPhone15,2': 'iPhone 14 Pro', 'iPhone15,3': 'iPhone 14 Pro Max',
+            'iPhone14,5': 'iPhone 13', 'Pixel 7': 'Google Pixel 7', 'Pixel 7 Pro': 'Google Pixel 7 Pro'
+        };
+        if (DEVICE_DATABASE[code]) return DEVICE_DATABASE[code];
+        if (code.startsWith('SM-')) return 'Samsung ' + code;
+        if (code.includes('iPhone')) return code.replace(/,/g, '');
+        return code || 'غير معروف';
+    }
+    
+    function addAttendanceRecord(record, isMatch, type, isTamper) {
+        let records = JSON.parse(localStorage.getItem('attendanceRecords')) || [];
+        const today = record.التاريخ || new Date().toLocaleDateString('ar-EG');
+        const employee = record.الموظف || '';
+        
+        let existingIndex = -1;
+        for (let i = 0; i < records.length; i++) {
+            if (records[i].الموظف === employee && records[i].التاريخ === today) {
+                existingIndex = i;
+                break;
+            }
+        }
+        
+        const deviceModel = record['موديل الجهاز'] || 'غير معروف';
+        const deviceName = getDeviceName(deviceModel);
+        
+        if (existingIndex !== -1) {
+            const existing = records[existingIndex];
+            if (type === 'حضور') {
+                existing.حضور = record.الوقت || existing.حضور || '';
+                existing.حضور_تلاعب = (!isMatch || isTamper);
+            } else if (type === 'انصراف') {
+                existing.انصراف = record.الوقت || existing.انصراف || '';
+                existing.انصراف_تلاعب = (!isMatch || isTamper);
+            }
+            if (record.الفرع) existing.الفرع = record.الفرع;
+            if (deviceName) existing.الجهاز = deviceName;
+
+            // تحديث منطق الحالة النهائي
+            if (existing.حضور_تلاعب) {
+                existing.الحالة = 'تلاعب في الحضور';
+            } else if (existing.انصراف_تلاعب) {
+                existing.الحالة = 'تلاعب في الانصراف';
+            } else {
+                existing.الحالة = 'منضبط';
+            }
+        } else {
+            const isAttendanceTamper = (type === 'حضور') && (!isMatch || isTamper);
+            const isDepartureTamper = (type === 'انصراف') && (!isMatch || isTamper);
+            
+            let status = 'منضبط';
+            if (isAttendanceTamper) status = 'تلاعب في الحضور';
+            else if (isDepartureTamper) status = 'تلاعب في الانصراف';
+
+            const newRecord = {
+                الموظف: employee,
+                التاريخ: today,
+                الفرع: record.الفرع || '',
+                الجهاز: deviceName,
+                حضور: type === 'حضور' ? (record.الوقت || '') : '',
+                انصراف: type === 'انصراف' ? (record.الوقت || '') : '',
+                حضور_تلاعب: isAttendanceTamper,
+                انصراف_تلاعب: isDepartureTamper,
+                الحالة: status
+            };
+            records.push(newRecord);
+        }
+        
+        localStorage.setItem('attendanceRecords', JSON.stringify(records));
+        loadAttendanceRecords();
+    }
+    
+    function loadAttendanceRecords() {
+        const records = JSON.parse(localStorage.getItem('attendanceRecords')) || [];
+        const tbody = document.getElementById('attendanceBody');
+        tbody.innerHTML = '';
+        let present = 0, absent = 0, tamper = 0;
+        
+        records.forEach((record, index) => {
+            const row = tbody.insertRow();
+            const status = record.الحالة || 'منضبط';
+            
+            const isTamper = status.includes('تلاعب');
+            const isPresent = status === 'منضبط';
+            const isAbsent = status === 'إجازة';
+            
+            if (isPresent) present++;
+            else if (isTamper) tamper++;
+            else if (isAbsent) absent++;
+            
+            if (isTamper) {
+                row.className = 'tamper-row';
+            } else if (isAbsent) {
+                row.className = 'absent';
+            }
+            
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${record.الموظف || ''}</td>
+                <td>${record.التاريخ || ''}</td>
+                <td>${record.حضور || ''}</td>
+                <td>${record.انصراف || ''}</td>
+                <td>${record.الفرع || ''}</td>
+                <td>${record.الجهاز || ''}</td>
+                <td>${status}</td>
+            `;
+        });
+        
+        document.getElementById('totalCount').textContent = records.length;
+        document.getElementById('presentCount').textContent = present;
+        document.getElementById('absentCount').textContent = absent;
+        document.getElementById('tamperCount').textContent = tamper;
+    }
+    
     function verifyMessage() {
         const inputText = document.getElementById('codeInput').value.trim();
         const resultDiv = document.getElementById('result');
         const loadingDiv = document.getElementById('loading');
-        
         loadingDiv.className = 'loading show';
         resultDiv.className = 'result';
         resultDiv.style.display = 'none';
-        
         if (!inputText) {
             loadingDiv.className = 'loading';
             resultDiv.className = 'result invalid';
@@ -481,153 +472,81 @@
             resultDiv.innerHTML = '⚠️ يرجى لصق رسالة الواتساب أولاً';
             return;
         }
-        
         setTimeout(() => {
             try {
                 const code = extractCodeFromMessage(inputText);
-                
                 if (!code) {
                     loadingDiv.className = 'loading';
                     resultDiv.className = 'result invalid';
                     resultDiv.style.display = 'block';
-                    resultDiv.innerHTML = `
-                        <h3>❌ لم يتم العثور على كود تحقق</h3>
-                        <div class="error-details">
-                            تأكد من نسخ الرسالة كاملة من واتساب<br>
-                            يجب أن تحتوي الرسالة على "الكود:" متبوعاً بالكود
-                        </div>
-                    `;
+                    resultDiv.innerHTML = `<h3>❌ لم يتم العثور على كود تحقق</h3>
+                        <div class="error-details">تأكد من نسخ الرسالة كاملة من واتساب</div>`;
                     return;
                 }
-                
                 const messageData = extractDataFromMessage(inputText);
                 const result = decryptCode(code);
-                
                 let html = '';
-                
+                let isTamper = false;
                 if (!result.success) {
+                    if (result.error.includes('تلاعب')) isTamper = true;
                     html += `<div class="summary-box danger">❌ ${result.error}</div>`;
-                    
-                    if (result.data) {
-                        html += `<div class="error-details">البيانات المستخرجة من الكود: ${result.data.join(' | ')}</div>`;
-                    }
-                    
+                    const recordType = messageData.النوع || 'حضور';
+                    addAttendanceRecord(messageData, false, recordType, isTamper);
                     loadingDiv.className = 'loading';
                     resultDiv.innerHTML = html;
                     resultDiv.className = 'result invalid';
                     resultDiv.style.display = 'block';
                     return;
                 }
-                
                 const dataArray = result.data;
-                
-                html += `<h3>📊 مقارنة البيانات</h3>`;
-                html += `<table class="comparison-table">
-                    <tr>
-                        <th>الحقل</th>
-                        <th>البيانات المرسلة</th>
-                        <th>بيانات الكود</th>
-                        <th>الحالة</th>
-                    </tr>`;
-                
+                const recordType = messageData.النوع || 'حضور';
                 let allMatch = true;
-                const today = new Date();
-                const todayFormatted = today.toLocaleDateString('ar-EG');
-                
                 for (let i = 0; i < FIELDS.length; i++) {
                     const field = FIELDS[i];
                     const sentValue = messageData[field] || 'غير موجود';
                     const codeValue = (dataArray[i] || 'غير موجود');
-                    
-                    let status = '';
-                    let statusClass = '';
-                    
-                    if (sentValue === codeValue) {
-                        // ✅ تم التعديل: استبدال كلمة "مطابق" بـ علامة صح
-                        status = '✅';
-                        statusClass = 'match';
-                    } else {
-                        // ❌ تم التعديل: استبدال كلمة "غير مطابق" بـ علامة خطأ
-                        status = '❌';
-                        statusClass = 'mismatch';
-                        allMatch = false;
-                    }
-                    
-                    html += `<tr>
-                        <td class="field-name">${field}</td>
-                        <td>${sentValue}</td>
-                        <td>${codeValue}</td>
-                        <td class="${statusClass}">${status}</td>
-                    </tr>`;
+                    if (sentValue !== codeValue) { allMatch = false; break; }
                 }
-                
+                html += `<h3>📊 مقارنة البيانات</h3><table class="comparison-table">
+                    <tr><th>الحقل</th><th>البيانات المرسلة</th><th>بيانات الكود</th><th>الحالة</th></tr>`;
+                for (let i = 0; i < FIELDS.length; i++) {
+                    const field = FIELDS[i];
+                    const sentValue = messageData[field] || 'غير موجود';
+                    const codeValue = (dataArray[i] || 'غير موجود');
+                    const isMatch = sentValue === codeValue;
+                    html += `<tr><td class="field-name">${field}</td>
+                        <td>${sentValue}</td><td>${codeValue}</td>
+                        <td class="${isMatch ? 'match' : 'mismatch'}">${isMatch ? '✅' : '❌'}</td></tr>`;
+                }
                 html += `</table>`;
-                
-                const sentDate = messageData.التاريخ || '';
-                const codeDate = dataArray[1] || '';
-                const recordType = messageData.النوع || 'تسجيل';
-                
-                if (sentDate === todayFormatted && codeDate === todayFormatted && allMatch) {
-                    html += `<div class="summary-box success">✅ تاريخ البيانات المرسلة مطابق لتاريخ اليوم</div>`;
-                    html += `<div class="summary-box success">✅ جميع البيانات مطابقة - لا يوجد تلاعب</div>`;
+                addAttendanceRecord(messageData, allMatch, recordType, !allMatch);
+                if (allMatch) {
+                    html += `<div class="summary-box success">✅ تم تسجيل ${recordType} بنجاح</div>`;
                     resultDiv.className = 'result valid';
+                } else {
+                    const tamperStatusText = (recordType === 'انصراف') ? 'تلاعب في الانصراف' : 'تلاعب في الحضور';
+                    html += `<div class="summary-box warning">⚠️ ${tamperStatusText}</div>`;
+                    resultDiv.className = 'result warning';
                 }
-                else if (sentDate === codeDate && sentDate !== todayFormatted && allMatch) {
-                    html += `<div class="summary-box danger">⚠️ تاريخ البيانات المرسلة غير متطابق مع تاريخ اليوم</div>`;
-                    
-                    let tamperMsg = '';
-                    if (recordType === 'حضور') {
-                        tamperMsg = '🚨 يوجد تلاعب في الحضور';
-                    } else if (recordType === 'انصراف') {
-                        tamperMsg = '🚨 يوجد تلاعب في الانصراف';
-                    } else {
-                        tamperMsg = '🚨 يوجد تلاعب في البيانات';
-                    }
-                    
-                    html += `<div class="tamper-message">${tamperMsg}</div>`;
-                    resultDiv.className = 'result date-tamper';
-                }
-                else {
-                    html += `<div class="summary-box danger">❌ يوجد تلاعب في البيانات - البيانات غير مطابقة</div>`;
-                    resultDiv.className = 'result invalid';
-                }
-                
                 loadingDiv.className = 'loading';
                 resultDiv.innerHTML = html;
                 resultDiv.style.display = 'block';
-                
             } catch (error) {
                 loadingDiv.className = 'loading';
                 resultDiv.className = 'result invalid';
                 resultDiv.style.display = 'block';
-                resultDiv.innerHTML = `
-                    <h3>❌ خطأ</h3>
-                    <div class="error-details">${error.message}</div>
-                `;
+                resultDiv.innerHTML = `<h3>❌ خطأ</h3><div class="error-details">${error.message}</div>`;
             }
         }, 500);
     }
     
-    // ============================================================
-    // وظائف مساعدة
-    // ============================================================
     function pasteFromClipboard() {
         const input = document.getElementById('codeInput');
-        
         if (navigator.clipboard && navigator.clipboard.readText) {
-            navigator.clipboard.readText()
-                .then(text => {
-                    if (text && text.length > 0) {
-                        input.value = text;
-                        verifyMessage();
-                    }
-                })
-                .catch(() => {
-                    input.focus();
-                });
-        } else {
-            input.focus();
-        }
+            navigator.clipboard.readText().then(text => {
+                if (text && text.length > 0) { input.value = text; verifyMessage(); }
+            }).catch(() => input.focus());
+        } else { input.focus(); }
     }
     
     function clearAll() {
@@ -637,18 +556,193 @@
         document.getElementById('loading').className = 'loading';
     }
     
+    function clearRecords() {
+        if (confirm('هل أنت متأكد من مسح جميع سجلات الحضور؟')) {
+            localStorage.removeItem('attendanceRecords');
+            loadAttendanceRecords();
+            closeModal('settingsModal');
+        }
+    }
+
+    function deleteRangeRecords() {
+        const fromStr = document.getElementById('deleteFromDate').value;
+        const toStr = document.getElementById('deleteToDate').value;
+        if (!fromStr || !toStr) {
+            alert('يرجى تحديد تاريخ البداية والنهاية أولاً');
+            return;
+        }
+        let records = JSON.parse(localStorage.getItem('attendanceRecords')) || [];
+        const fromDate = new Date(fromStr);
+        const toDate = new Date(toStr);
+        toDate.setHours(23, 59, 59);
+
+        const filtered = records.filter(r => {
+            if (!r.التاريخ) return true;
+            const rDate = parseDateString(r.التاريخ);
+            if (!rDate) return true;
+            return !(rDate >= fromDate && rDate <= toDate);
+        });
+
+        if (confirm(`هل أنت متأكد من مسح السجلات بين ${fromStr} و ${toStr}؟`)) {
+            localStorage.setItem('attendanceRecords', JSON.stringify(filtered));
+            loadAttendanceRecords();
+            closeModal('settingsModal');
+            alert('تم مسح السجلات في الفترة المحددة بنجاح');
+        }
+    }
+
+    function parseDateString(dateStr) {
+        if (!dateStr) return null;
+        let parts = dateStr.split('/');
+        if (parts.length === 3) return new Date(parts[2], parts[1] - 1, parts[0]);
+        parts = dateStr.split('-');
+        if (parts.length === 3) return new Date(parts[0], parts[1] - 1, parts[2]);
+        return new Date(dateStr);
+    }
+    
+    function exportRecords() {
+        const records = JSON.parse(localStorage.getItem('attendanceRecords')) || [];
+        if (records.length === 0) { alert('لا يوجد سجلات للتصدير'); return; }
+        let csv = '\uFEFFم,الموظف,التاريخ,الحضور,الانصراف,الفرع,الجهاز,الحالة\n';
+        records.forEach((r, i) => {
+            csv += `${i+1},"${r.الموظف||''}","${r.التاريخ||''}","${r.حضور||''}","${r.انصراف||''}","${r.الفرع||''}","${r.الجهاز||''}","${r.الحالة||''}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `سجل_الحضور_${new Date().toLocaleDateString('ar-EG')}.csv`;
+        link.click();
+    }
+
+    function importRecords(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const lines = e.target.result.split('\n');
+            let records = JSON.parse(localStorage.getItem('attendanceRecords')) || [];
+            let importedCount = 0;
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
+                if (cols.length >= 7) {
+                    records.push({
+                        الموظف: cols[1] || '',
+                        التاريخ: cols[2] || '',
+                        حضور: cols[3] || '',
+                        انصراف: cols[4] || '',
+                        الفرع: cols[5] || '',
+                        الجهاز: cols[6] || '',
+                        الحالة: cols[7] || 'منضبط'
+                    });
+                    importedCount++;
+                }
+            }
+            localStorage.setItem('attendanceRecords', JSON.stringify(records));
+            loadAttendanceRecords();
+            closeModal('settingsModal');
+            alert(`تم استيراد ${importedCount} سجل بنجاح`);
+        };
+        reader.readAsText(file);
+    }
+
+    function generatePDF() {
+        const scope = document.getElementById('pdfScope').value;
+        let records = JSON.parse(localStorage.getItem('attendanceRecords')) || [];
+
+        if (scope === 'range') {
+            const fromStr = document.getElementById('pdfFromDate').value;
+            const toStr = document.getElementById('pdfToDate').value;
+            if (!fromStr || !toStr) {
+                alert('يرجى تحديد تاريخ البداية والنهاية أولاً');
+                return;
+            }
+            const fromDate = new Date(fromStr);
+            const toDate = new Date(toStr);
+            toDate.setHours(23, 59, 59);
+
+            records = records.filter(r => {
+                if (!r.التاريخ) return false;
+                const rDate = parseDateString(r.التاريخ);
+                if (!rDate) return false;
+                return rDate >= fromDate && rDate <= toDate;
+            });
+        }
+
+        if (records.length === 0) {
+            alert('لا توجد سجلات ضمن النطاق المخصص للتصدير');
+            return;
+        }
+
+        closeModal('pdfModal');
+
+        const printWindow = window.open('', '_blank');
+        let rowsHtml = '';
+        records.forEach((r, i) => {
+            const statusClass = r.الحالة.includes('تلاعب') ? 'color: red; font-weight: bold;' : '';
+            rowsHtml += `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${r.الموظف || ''}</td>
+                    <td>${r.التاريخ || ''}</td>
+                    <td>${r.حضور || '-'}</td>
+                    <td>${r.انصراف || '-'}</td>
+                    <td>${r.الفرع || ''}</td>
+                    <td>${r.الجهاز || ''}</td>
+                    <td style="${statusClass}">${r.الحالة || 'منضبط'}</td>
+                </tr>
+            `;
+        });
+
+        printWindow.document.write(`
+            <html lang="ar" dir="rtl">
+            <head>
+                <title>تقرير سجل الحضور والإنصراف</title>
+                <style>
+                    body { font-family: 'Tahoma', Arial, sans-serif; padding: 20px; direction: rtl; text-align: right; }
+                    h2 { text-align: center; color: #1a1a2e; margin-bottom: 5px; }
+                    .subtitle { text-align: center; font-size: 13px; color: #666; margin-bottom: 20px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+                    th, td { border: 1px solid #aaa; padding: 8px 5px; text-align: center; }
+                    th { background-color: #1a1a2e; color: white; }
+                    tr:nth-child(even) { background-color: #f9f9f9; }
+                    @media print {
+                        body { padding: 0; }
+                    }
+                </style>
+            </head>
+            <body>
+                <h2>📊 تقرير سجل الحضور والانصراف</h2>
+                <div class="subtitle">تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')}</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>م</th><th>الموظف</th><th>التاريخ</th><th>وقت الحضور</th>
+                            <th>وقت الانصراف</th><th>الفرع</th><th>الجهاز</th><th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+        setTimeout(() => {
+            printWindow.print();
+        }, 500);
+    }
+    
     document.getElementById('codeInput').addEventListener('paste', function() {
         setTimeout(verifyMessage, 600);
     });
     
-    document.getElementById('codeInput').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-            e.preventDefault();
-            verifyMessage();
-        }
-    });
+    window.onload = function() {
+        loadAttendanceRecords();
+    };
     
-    console.log('🔐 برنامج فحص كود التحقق جاهز');
+    console.log('👨‍💼 نظام الحضور - المدير جاهز');
 </script>
 
 </body>
